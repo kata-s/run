@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RUN">
+<meta name="theme-color" content="#0a0a0a">
+<title>飛騨高山 100km トラッカー</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg2: #141414;
+    --bg3: #1e1e1e;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0f0f0;
+    --text2: #888;
+    --text3: #555;
+    --green: #1DB954;
+    --green2: #158a3e;
+    --blue: #3b82f6;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, 'Helvetica Neue', sans-serif; }
+  body { display: flex; flex-direction: column; max-width: 430px; margin: 0 auto; }
+
+  /* top bar */
+  .topbar { padding: 52px 20px 12px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .topbar-title { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: var(--text2); text-transform: uppercase; }
+  .topbar-phase { font-size: 11px; padding: 3px 10px; border-radius: 99px; font-weight: 600; }
+
+  /* tab bar */
+  .tabbar { display: flex; border-top: 0.5px solid var(--border); background: rgba(10,10,10,0.92); backdrop-filter: blur(20px); padding: 8px 0 20px; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; z-index: 100; }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 6px 0; }
+  .tab-icon { font-size: 20px; line-height: 1; }
+  .tab-label { font-size: 10px; font-weight: 500; color: var(--text3); }
+  .tab.active .tab-label { color: var(--green); }
+
+  /* scroll area */
+  .scroll { flex: 1; overflow-y: auto; padding: 0 16px 100px; -webkit-overflow-scrolling: touch; }
+
+  /* cards */
+  .card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+  .card-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; color: var(--text2); text-transform: uppercase; margin-bottom: 8px; }
+
+  /* countdown */
+  .cd-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+  .cd-cell { background: var(--bg3); border-radius: var(--radius-sm); padding: 12px 4px; text-align: center; }
+  .cd-num { font-size: 28px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .cd-unit { font-size: 10px; color: var(--text2); margin-top: 3px; }
+
+  /* metrics grid */
+  .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .metric { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px; }
+  .metric-label { font-size: 11px; color: var(--text2); margin-bottom: 6px; }
+  .metric-val { font-size: 26px; font-weight: 700; line-height: 1; }
+  .metric-unit { font-size: 13px; font-weight: 400; color: var(--text2); margin-left: 2px; }
+
+  /* progress */
+  .prog-wrap { margin: 6px 0 14px; }
+  .prog-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+  .prog-track { background: var(--bg3); border-radius: 99px; height: 6px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
+
+  /* forms */
+  .form-row { display: grid; grid-template-columns: 80px 1fr; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .form-label { font-size: 13px; color: var(--text2); }
+  input[type=number], input[type=text] {
+    background: var(--bg3); border: 0.5px solid var(--border2); border-radius: var(--radius-sm);
+    color: var(--text); font-size: 15px; padding: 10px 12px; width: 100%; outline: none;
+    -webkit-appearance: none;
+  }
+  input:focus { border-color: var(--green); }
+  .btn { display: block; width: 100%; padding: 14px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; cursor: pointer; border: none; margin-top: 12px; }
+  .btn-green { background: var(--green); color: #000; }
+  .btn-outline { background: transparent; border: 0.5px solid var(--border2); color: var(--text); margin-top: 8px; }
+
+  /* log items */
+  .log-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 0.5px solid var(--border); }
+  .log-item:last-child { border-bottom: none; }
+  .log-date { font-size: 11px; color: var(--text2); margin-bottom: 3px; }
+  .log-main { font-size: 15px; font-weight: 600; }
+  .log-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .del { background: none; border: none; color: var(--text3); font-size: 18px; cursor: pointer; padding: 4px 8px; }
+
+  /* phase cards */
+  .phase-card { border-radius: var(--radius); padding: 16px; margin-bottom: 10px; border: 0.5px solid var(--border); }
+  .phase-card.active { border-color: var(--green); }
+  .phase-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .phase-name { font-size: 14px; font-weight: 700; }
+  .phase-range { font-size: 11px; color: var(--text2); }
+  .phase-desc { font-size: 13px; color: var(--text2); line-height: 1.6; }
+  .phase-km { font-size: 12px; color: var(--green); margin-top: 6px; font-weight: 600; }
+
+  /* toast */
+  .toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-10px); background: var(--green); color: #000; font-size: 13px; font-weight: 600; padding: 10px 20px; border-radius: 99px; opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 200; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .empty { text-align: center; color: var(--text3); font-size: 14px; padding: 30px 0; }
+  .big { font-size: 36px; font-weight: 700; line-height: 1; }
+  .divider { height: 0.5px; background: var(--border); margin: 4px 0 14px; }
+
+  .alert-bar { background: rgba(239,68,68,0.12); border: 0.5px solid rgba(239,68,68,0.3); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; color: #fca5a5; margin-top: 8px; display: none; }
+  .tag { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 99px; margin-left: 6px; vertical-align: middle; }
+  .tag-now { background: rgba(29,185,84,0.15); color: var(--green); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title">飛騨高山 100km</div>
+  <div class="topbar-phase" id="top-phase"></div>
+</div>
+
+<div class="scroll" id="main-scroll">
+  <!-- HOME -->
+  <div id="tab-home">
+    <div class="card">
+      <div class="card-label">レースまで — 2026年6月14日</div>
+      <div class="cd-grid" id="countdown"></div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">今週の距離</div>
+        <div><span class="metric-val" id="h-weekkm">0</span><span class="metric-unit">km</span></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">週間目標</div>
+        <div><span class="metric-val" id="h-target">30</span><span class="metric-unit">km</span></div>
+      </div>
+    </div>
+    <div class="prog-wrap">
+      <div class="prog-row"><span>週間進捗</span><span id="h-weekpct">0%</span></div>
+      <div class="prog-track"><div class="prog-fill" id="h-weekbar" style="width:0%;background:var(--green)"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">体重</div>
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <span class="big" id="h-wt">—</span>
+        <span style="font-size:14px;color:var(--text2)">kg　目標 57.0</span>
+      </div>
+      <div class="prog-wrap" style="margin-top:12px">
+        <div class="prog-row"><span>61.2kg → 57.0kg</span><span id="h-wtpct">—</span></div>
+        <div class="prog-track"><div class="prog-fill" id="h-wtbar" style="width:0%;background:var(--blue)"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">累計</div>
+      <div style="display:flex;gap:24px">
+        <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">総距離</div><span class="big" id="h-total">0</span><span style="font-size:14px;color:var(--text2)"> km</span></div>
+        <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">回数</div><span class="big" id="h-runs">0</span><span style="font-size:14px;color:var(--text2)"> 回</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOG -->
+  <div id="tab-log" style="display:none">
+    <div class="card">
+      <div class="card-label">ランを記録</div>
+      <div class="form-row"><span class="form-label">距離 km</span><input type="number" id="in-dist" placeholder="10.0" step="0.1" min="0"></div>
+      <div class="form-row"><span class="form-label">時間 分</span><input type="number" id="in-time" placeholder="60" min="0"></div>
+      <div class="form-row"><span class="form-label">心拍 bpm</span><input type="number" id="in-hr" placeholder="130"></div>
+      <div class="form-row"><span class="form-label">メモ</span><input type="text" id="in-note" placeholder="咳なし・坂練..."></div>
+      <button class="btn btn-green" onclick="addRun()">記録する</button>
+      <div class="alert-bar" id="run-err">距離と時間を入力してください</div>
+    </div>
+    <div class="card">
+      <div class="card-label">履歴</div>
+      <div id="run-list"><div class="empty">まだ記録なし</div></div>
+    </div>
+  </div>
+
+  <!-- WEIGHT -->
+  <div id="tab-weight" style="display:none">
+    <div class="card">
+      <div class="card-label">体重を記録</div>
+      <div class="form-row"><span class="form-label">体重 kg</span><input type="number" id="in-wt" placeholder="61.2" step="0.1" min="40" max="150"></div>
+      <button class="btn btn-green" onclick="addWeight()">記録する</button>
+    </div>
+    <div class="card">
+      <div class="card-label">体重履歴</div>
+      <div id="wt-list"><div class="empty">まだ記録なし</div></div>
+    </div>
+  </div>
+
+  <!-- PLAN -->
+  <div id="tab-plan" style="display:none">
+    <div id="phase-list"></div>
+    <div class="card" style="margin-top:4px">
+      <div class="card-label">週間目標を変更</div>
+      <div class="form-row"><span class="form-label">目標 km</span><input type="number" id="in-tgt" placeholder="30" min="1" max="300"></div>
+      <button class="btn btn-outline" onclick="updateTarget()">更新する</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tab bar -->
+<div class="tabbar">
+  <div class="tab active" id="t-home" onclick="go('home')">
+    <div class="tab-icon">🏠</div>
+    <div class="tab-label">ホーム</div>
+  </div>
+  <div class="tab" id="t-log" onclick="go('log')">
+    <div class="tab-icon">➕</div>
+    <div class="tab-label">記録</div>
+  </div>
+  <div class="tab" id="t-weight" onclick="go('weight')">
+    <div class="tab-icon">⚖️</div>
+    <div class="tab-label">体重</div>
+  </div>
+  <div class="tab" id="t-plan" onclick="go('plan')">
+    <div class="tab-icon">📋</div>
+    <div class="tab-label">プラン</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const RACE = new Date('2026-06-14T05:00:00');
+const PHASES = [
+  { name:'Phase 1 — 再起動', range:'3/19〜4/6', target:30, desc:'週3回・30〜40分ジョグ。心拍130以下。咳テスト週。坂道ウォーキング開始。', start:new Date('2026-03-19'), end:new Date('2026-04-07') },
+  { name:'Phase 2 — ベース構築', range:'4/7〜5/4', target:55, desc:'週4〜5回。週1ロング15〜20km。坂道コース導入。', start:new Date('2026-04-07'), end:new Date('2026-05-05') },
+  { name:'Phase 3 — 山岳特化', range:'5/5〜6/1', target:70, desc:'週1ロング25〜30km。累積200m登り。補給食の胃腸トレ開始。', start:new Date('2026-05-05'), end:new Date('2026-06-02') },
+  { name:'Phase 4 — テーパー', range:'6/2〜6/13', target:35, desc:'距離を落として脚を残す。20km以下で調整。カーボローディング準備。', start:new Date('2026-06-02'), end:new Date('2026-06-14') },
+];
+const PHASE_COLORS = ['#1DB954','#3b82f6','#f59e0b','#ef4444'];
+
+let runs = JSON.parse(localStorage.getItem('kata_runs')||'[]');
+let weights = JSON.parse(localStorage.getItem('kata_weights')||'[]');
+let weekTarget = parseInt(localStorage.getItem('kata_target')||'30');
+let curTab = 'home';
+
+function save(){ localStorage.setItem('kata_runs',JSON.stringify(runs)); localStorage.setItem('kata_weights',JSON.stringify(weights)); localStorage.setItem('kata_target',weekTarget); }
+
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
+
+function go(tab){
+  ['home','log','weight','plan'].forEach(x=>{
+    document.getElementById('tab-'+x).style.display = x===tab?'block':'none';
+    document.getElementById('t-'+x).classList.toggle('active', x===tab);
+  });
+  curTab=tab;
+  document.getElementById('main-scroll').scrollTop=0;
+  if(tab==='home') renderHome();
+  if(tab==='log') renderRuns();
+  if(tab==='weight') renderWeights();
+  if(tab==='plan') renderPlan();
+}
+
+function getWeekKm(){
+  const now=new Date(); const mon=new Date(now);
+  mon.setDate(now.getDate()-((now.getDay()+6)%7)); mon.setHours(0,0,0,0);
+  return runs.filter(r=>new Date(r.date)>=mon).reduce((a,r)=>a+(r.dist||0),0);
+}
+
+function getCurrentPhase(){
+  const now=new Date();
+  for(let i=0;i<PHASES.length;i++) if(now>=PHASES[i].start&&now<PHASES[i].end) return i;
+  return now<PHASES[0].start?0:3;
+}
+
+function renderHome(){
+  const now=new Date(); const diff=Math.max(0,RACE-now);
+  const d=Math.floor(diff/86400000);
+  const h=Math.floor((diff%86400000)/3600000);
+  const m=Math.floor((diff%3600000)/60000);
+  const s=Math.floor((diff%60000)/1000);
+  document.getElementById('countdown').innerHTML=
+    `<div class="cd-cell"><div class="cd-num">${d}</div><div class="cd-unit">日</div></div>
+     <div class="cd-cell"><div class="cd-num">${String(h).padStart(2,'0')}</div><div class="cd-unit">時間</div></div>
+     <div class="cd-cell"><div class="cd-num">${String(m).padStart(2,'0')}</div><div class="cd-unit">分</div></div>
+     <div class="cd-cell"><div class="cd-num">${String(s).padStart(2,'0')}</div><div class="cd-unit">秒</div></div>`;
+
+  const wkm=getWeekKm(); const pct=Math.min(100,Math.round(wkm/weekTarget*100));
+  document.getElementById('h-weekkm').textContent=wkm.toFixed(1);
+  document.getElementById('h-target').textContent=weekTarget;
+  document.getElementById('h-weekpct').textContent=pct+'%';
+  document.getElementById('h-weekbar').style.width=pct+'%';
+
+  const total=runs.reduce((a,r)=>a+(r.dist||0),0);
+  document.getElementById('h-total').textContent=total.toFixed(1);
+  document.getElementById('h-runs').textContent=runs.length;
+
+  if(weights.length){
+    const lw=weights[weights.length-1].wt;
+    document.getElementById('h-wt').textContent=lw.toFixed(1);
+    const wpct=Math.min(100,Math.max(0,Math.round((61.2-lw)/(61.2-57.0)*100)));
+    document.getElementById('h-wtpct').textContent=wpct+'%';
+    document.getElementById('h-wtbar').style.width=wpct+'%';
+  }
+
+  const cp=getCurrentPhase();
+  const ph=PHASES[cp];
+  document.getElementById('top-phase').textContent='P'+(cp+1);
+  document.getElementById('top-phase').style.cssText=`background:${PHASE_COLORS[cp]}22;color:${PHASE_COLORS[cp]};font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;`;
+}
+
+function addRun(){
+  const dist=parseFloat(document.getElementById('in-dist').value);
+  const time=parseInt(document.getElementById('in-time').value);
+  const hr=parseInt(document.getElementById('in-hr').value)||null;
+  const note=document.getElementById('in-note').value.trim()||'';
+  const err=document.getElementById('run-err');
+  if(!dist||!time||dist<=0||time<=0){ err.style.display='block'; setTimeout(()=>err.style.display='none',3000); return; }
+  runs.push({date:new Date().toISOString(),dist,time,hr,note}); save(); renderRuns();
+  document.getElementById('in-dist').value=''; document.getElementById('in-time').value=''; document.getElementById('in-hr').value=''; document.getElementById('in-note').value='';
+  toast('記録しました ✓');
+}
+
+function deleteRun(i){ if(confirm('削除しますか？')){ runs.splice(i,1); save(); renderRuns(); } }
+
+function renderRuns(){
+  const el=document.getElementById('run-list');
+  if(!runs.length){ el.innerHTML='<div class="empty">まだ記録なし</div>'; return; }
+  el.innerHTML=[...runs].reverse().map((r,ri)=>{
+    const i=runs.length-1-ri;
+    const d=new Date(r.date);
+    const ds=`${d.getMonth()+1}/${d.getDate()} (${['日','月','火','水','木','金','土'][d.getDay()]})`;
+    const pace=r.time/r.dist; const pm=Math.floor(pace); const ps=String(Math.round((pace-pm)*60)).padStart(2,'0');
+    return `<div class="log-item">
+      <div>
+        <div class="log-date">${ds}</div>
+        <div class="log-main">${r.dist.toFixed(1)} km <span style="font-size:13px;font-weight:400;color:var(--text2)">${r.time}分</span></div>
+        <div class="log-sub">ペース ${pm}:${ps}/km${r.hr?' · 心拍'+r.hr:''}${r.note?' · '+r.note:''}</div>
+      </div>
+      <button class="del" onclick="deleteRun(${i})">×</button>
+    </div>`;
+  }).join('');
+}
+
+function addWeight(){
+  const wt=parseFloat(document.getElementById('in-wt').value);
+  if(!wt||wt<40||wt>150) return;
+  weights.push({date:new Date().toISOString(),wt}); save(); renderWeights(); renderHome();
+  document.getElementById('in-wt').value='';
+  toast(wt.toFixed(1)+'kg 記録 ✓');
+}
+
+function deleteWeight(i){ if(confirm('削除しますか？')){ weights.splice(i,1); save(); renderWeights(); renderHome(); } }
+
+function renderWeights(){
+  const el=document.getElementById('wt-list');
+  if(!weights.length){ el.innerHTML='<div class="empty">まだ記録なし</div>'; return; }
+  el.innerHTML=[...weights].reverse().map((w,ri)=>{
+    const i=weights.length-1-ri;
+    const d=new Date(w.date); const ds=`${d.getMonth()+1}/${d.getDate()} (${['日','月','火','水','木','金','土'][d.getDay()]})`;
+    const diff=w.wt-57.0; const sign=diff>0?'+':''; const col=diff>0?'var(--red)':'var(--green)';
+    return `<div class="log-item">
+      <div>
+        <div class="log-date">${ds}</div>
+        <div class="log-main">${w.wt.toFixed(1)} kg <span style="font-size:13px;font-weight:600;color:${col}">${sign}${diff.toFixed(1)}</span></div>
+      </div>
+      <button class="del" onclick="deleteWeight(${i})">×</button>
+    </div>`;
+  }).join('');
+}
+
+function renderPlan(){
+  const cur=getCurrentPhase();
+  document.getElementById('phase-list').innerHTML=PHASES.map((p,i)=>{
+    const isActive=i===cur;
+    return `<div class="phase-card${isActive?' active':''}" style="background:${isActive?PHASE_COLORS[i]+'11':'var(--bg2)'}">
+      <div class="phase-header">
+        <div class="phase-name" style="color:${PHASE_COLORS[i]}">${p.name}${isActive?'<span class="tag tag-now">今ここ</span>':''}</div>
+        <div class="phase-range">${p.range}</div>
+      </div>
+      <div class="phase-desc">${p.desc}</div>
+      <div class="phase-km">週間目標 ${p.target} km</div>
+    </div>`;
+  }).join('');
+}
+
+function updateTarget(){
+  const v=parseInt(document.getElementById('in-tgt').value);
+  if(v>0&&v<500){ weekTarget=v; save(); toast('目標を'+v+'kmに更新 ✓'); document.getElementById('in-tgt').value=''; }
+}
+
+renderHome();
+setInterval(()=>{ if(curTab==='home') renderHome(); },1000);
+</script>
+</body>
+</html>
